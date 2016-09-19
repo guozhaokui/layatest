@@ -65,6 +65,44 @@
             [
                 
             ]
+        },
+        {
+            "type": "MeshSprite3D",
+            "instanceParams":
+            {
+                "loadPath": "cube-Box002.lm"
+            },
+            "props":
+            {
+                "isStatic": false,
+                "name": "Box002"
+            },
+            "customProps":
+            {
+                "translate":
+                [
+                    0,
+                    13.96228,
+                    18.01077
+                ],
+                "rotation":
+                [
+                    -0.7071068,
+                    -0,
+                    0,
+                    0.7071068
+                ],
+                "scale":
+                [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "child":
+            [
+                
+            ]
         }
     ]
 }
