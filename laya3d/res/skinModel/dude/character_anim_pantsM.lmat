@@ -1,0 +1,61 @@
+{
+    "type": "Material",
+    "props":
+    {
+        "name": "character_anim_pantsM",
+        "transparent": false,
+        "cullFace": true
+    },
+    "customProps":
+    {
+        "ambientColor":
+        [
+            0,
+            0,
+            0
+        ],
+        "diffuseColor":
+        [
+            0.8,
+            0.8,
+            0.8
+        ],
+        "specularColor":
+        [
+            0.5,
+            0.5,
+            0.5,
+            1
+        ],
+        "reflectColor":
+        [
+            0,
+            0,
+            0
+        ],
+        "diffuseTexture":
+        {
+            "texture2D": "pants.png"
+        },
+        "normalTexture":
+        {
+            "texture2D": ""
+        },
+        "specularTexture":
+        {
+            "texture2D": "pantsS.png"
+        },
+        "emissiveTexture":
+        {
+            "texture2D": ""
+        },
+        "ambientTexture":
+        {
+            "texture2D": ""
+        },
+        "reflectTexture":
+        {
+            "texture2D": ""
+        }
+    }
+}

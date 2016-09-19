@@ -1,0 +1,61 @@
+{
+    "type": "Material",
+    "props":
+    {
+        "name": "character_anim_headM",
+        "transparent": false,
+        "cullFace": true
+    },
+    "customProps":
+    {
+        "ambientColor":
+        [
+            0.04958,
+            0.04958,
+            0.04958
+        ],
+        "diffuseColor":
+        [
+            1,
+            1,
+            1
+        ],
+        "specularColor":
+        [
+            0.5,
+            0.5,
+            0.5,
+            1
+        ],
+        "reflectColor":
+        [
+            0,
+            0,
+            0
+        ],
+        "diffuseTexture":
+        {
+            "texture2D": "head.png"
+        },
+        "normalTexture":
+        {
+            "texture2D": ""
+        },
+        "specularTexture":
+        {
+            "texture2D": "headS.png"
+        },
+        "emissiveTexture":
+        {
+            "texture2D": ""
+        },
+        "ambientTexture":
+        {
+            "texture2D": ""
+        },
+        "reflectTexture":
+        {
+            "texture2D": ""
+        }
+    }
+}

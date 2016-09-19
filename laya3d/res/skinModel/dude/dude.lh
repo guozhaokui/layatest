@@ -1,51 +1,70 @@
 {
-  "type": "Sprite3D",
-  "props": {
-    "load": [
-      null
-    ],
-    "translate": [
-      0.0,
-      0.0,
-      0.0
-    ],
-    "rotation": [
-      0.0,
-      0.0,
-      0.0,
-      1.0
-    ],
-    "scale": [
-      1.0,
-      1.0,
-      1.0
-    ]
-  },
-  "child": [
+    "type": "Sprite3D",
+    "props":
     {
-      "type": "Mesh",
-      "props": {
-        "load": [
-          "dude-him.lm"
+        "name": "RootNode"
+    },
+    "customProps":
+    {
+        "translate":
+        [
+            0,
+            0,
+            0
         ],
-        "translate": [
-          0.0,
-          0.0,
-          0.0
+        "rotation":
+        [
+            0,
+            0,
+            0,
+            1
         ],
-        "rotation": [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ],
-        "scale": [
-          1.0,
-          1.0,
-          1.0
+        "scale":
+        [
+            1,
+            1,
+            1
         ]
-      },
-      "child": []
-    }
-  ]
+    },
+    "child":
+    [
+        {
+            "type": "MeshSprite3D",
+            "instanceParams":
+            {
+                "loadPath": "dude-him.lm"
+            },
+            "props":
+            {
+                "isStatic": false,
+                "name": "him"
+            },
+            "customProps":
+            {
+                "translate":
+                [
+                    0,
+                    0,
+                    0
+                ],
+                "rotation":
+                [
+                    0,
+                    0,
+                    0,
+                    1
+                ],
+                "scale":
+                [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "child":
+            [
+                
+            ]
+        }
+    ]
 }
