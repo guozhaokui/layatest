@@ -1,5 +1,5 @@
 function navData(dt, pos) {
-    var st = pos - 4;
+    var st = pos;
     if (st < 0)
         st = 0;
     var ed = st + 32;
@@ -13,7 +13,7 @@ function navData(dt, pos) {
         if (cv.length < 2)
             cv = '0' + cv;
         res += cv;
-        if (ci > 0 && ci % 15 == 0)
+        if (ci > 0 && (ci + 1) % 16 == 0)
             res += '\n';
         else
             res += ' ';
