@@ -21,10 +21,6 @@
 	})()
 
 
-	/**
-	*...
-	*@author
-	*/
 	//class laya.ani.bone.Bone
 	var Bone=(function(){
 		function Bone(){
@@ -57,8 +53,7 @@
 					if (this.inheritRotation && this.inheritScale){
 						tResultMatrix=this.resultTransform.getMatrix();
 						Matrix.mul(tResultMatrix,this._parent.resultMatrix,this.resultMatrix);
-					}
-					else{
+						}else {
 						var la=this.transform.getMatrix().a;
 						var lb=this.transform.getMatrix().b;
 						var lc=this.transform.getMatrix().c;
@@ -194,6 +189,7 @@
 			this._diyTexture=null;
 			this._parentMatrix=null;
 			this._resultMatrix=null;
+			this._skinSprite=null;
 		}
 
 		__class(BoneSlot,'laya.ani.bone.BoneSlot');
@@ -230,7 +226,24 @@
 					var tName=this.currDisplayData.name;
 					this.currTexture=this.templet.getTexture(tName);
 					if (this.currTexture && Render.isWebGL && this.currDisplayData.type==0 && this.currDisplayData.uvs){
-						this.currTexture=new Texture(this.currTexture.bitmap,this.currDisplayData.uvs);
+						var tTexture=new Texture(this.currTexture.bitmap,this.currDisplayData.uvs);
+						if (this.currDisplayData.uvs[0] > this.currDisplayData.uvs[4]
+							&& this.currDisplayData.uvs[1] > this.currDisplayData.uvs[5]){
+							tTexture.width=this.currTexture.height;
+							tTexture.height=this.currTexture.width;
+							tTexture.offsetX=-this.currTexture.offsetX;
+							tTexture.offsetY=-this.currTexture.offsetY;
+							tTexture.sourceWidth=this.currTexture.sourceHeight;
+							tTexture.sourceHeight=this.currTexture.sourceWidth;
+							}else {
+							tTexture.width=this.currTexture.width;
+							tTexture.height=this.currTexture.height;
+							tTexture.offsetX=-this.currTexture.offsetX;
+							tTexture.offsetY=-this.currTexture.offsetY;
+							tTexture.sourceWidth=this.currTexture.sourceWidth;
+							tTexture.sourceHeight=this.currTexture.sourceHeight;
+						}
+						this.currTexture=tTexture;
 						(this.currTexture.bitmap).useNum--;
 					}
 				}
@@ -262,8 +275,9 @@
 		*@param graphics
 		*@param noUseSave
 		*/
-		__proto.draw=function(graphics,boneMatrixArray,noUseSave){
+		__proto.draw=function(graphics,boneMatrixArray,noUseSave,alpha){
 			(noUseSave===void 0)&& (noUseSave=false);
+			(alpha===void 0)&& (alpha=1);
 			if ((this._diyTexture==null && this.currTexture==null)|| this.currDisplayData==null){
 				if (!(this.currDisplayData && this.currDisplayData.type==3)){
 					return;
@@ -311,7 +325,14 @@
 					}
 					break ;
 				case 1:
-					tSkinSprite=RunDriver.skinAniSprite();
+					if (noUseSave){
+						if (this._skinSprite==null){
+							this._skinSprite=RunDriver.skinAniSprite();
+						}
+						tSkinSprite=this._skinSprite;
+						}else {
+						tSkinSprite=RunDriver.skinAniSprite();
+					}
 					if (tSkinSprite==null){
 						return;
 					}
@@ -351,16 +372,23 @@
 							}
 						}
 						}else {
-						this.skinMesh(boneMatrixArray,tSkinSprite);
+						this.skinMesh(boneMatrixArray,tSkinSprite,alpha);
 					}
 					break ;
 				case 2:
-					tSkinSprite=RunDriver.skinAniSprite();
+					if (noUseSave){
+						if (this._skinSprite==null){
+							this._skinSprite=RunDriver.skinAniSprite();
+						}
+						tSkinSprite=this._skinSprite;
+						}else {
+						tSkinSprite=RunDriver.skinAniSprite();
+					}
 					if (tSkinSprite==null){
 						return;
 					}
 					graphics.drawSkin(tSkinSprite);
-					this.skinMesh(boneMatrixArray,tSkinSprite);
+					this.skinMesh(boneMatrixArray,tSkinSprite,alpha);
 					break ;
 				case 3:
 					break ;
@@ -371,7 +399,7 @@
 		*显示蒙皮动画
 		*@param boneMatrixArray 当前帧的骨骼矩阵
 		*/
-		__proto.skinMesh=function(boneMatrixArray,skinSprite){
+		__proto.skinMesh=function(boneMatrixArray,skinSprite,alpha){
 			var tBones=this.currDisplayData.bones;
 			var tUvs=this.currDisplayData.uvs;
 			var tWeights=this.currDisplayData.weights;
@@ -391,7 +419,7 @@
 			var tRed=1;
 			var tGreed=1;
 			var tBlue=1;
-			var tAlpha=1;
+			var tAlpha=alpha;
 			for (i=0,n=tBones.length;i < n;){
 				nn=tBones[i++]+i;
 				tRx=0,tRy=0;
@@ -469,10 +497,6 @@
 	})()
 
 
-	/**
-	*...
-	*@author
-	*/
 	//class laya.ani.bone.EventData
 	var EventData=(function(){
 		function EventData(){
@@ -488,10 +512,6 @@
 	})()
 
 
-	/**
-	*...
-	*@author
-	*/
 	//class laya.ani.bone.IkConstraint
 	var IkConstraint=(function(){
 		function IkConstraint(data,bones){
@@ -516,7 +536,7 @@
 		__class(IkConstraint,'laya.ani.bone.IkConstraint');
 		var __proto=IkConstraint.prototype;
 		__proto.apply=function(){
-			switch(this._bones.length){
+			switch (this._bones.length){
 				case 1:
 					this._applyIk1(this._bones[0],this._targetBone.resultMatrix.tx,this._targetBone.resultMatrix.ty,this.mix);
 					break ;
@@ -619,7 +639,7 @@
 					if (c1 < 0)q=-q;
 					q=-(c1+q)/ 2;
 					var r0=q / c2,r1=c / q;
-					var r=Math.abs(r0)< Math.abs(r1)?r0:r1;
+					var r=Math.abs(r0)< Math.abs(r1)? r0 :r1;
 					if (r *r <=dd){
 						y=Math.sqrt(dd-r *r)*bendDir;
 						a1=ta-Math.atan2(y,r);
@@ -694,10 +714,6 @@
 	})()
 
 
-	/**
-	*...
-	*@author
-	*/
 	//class laya.ani.bone.IkConstraintData
 	var IkConstraintData=(function(){
 		function IkConstraintData(){
@@ -720,7 +736,6 @@
 	*1，生成根据骨骼计算控制点
 	*2，根据控制点生成路径，并计算路径上的节点
 	*3，根据节点，重新调整骨骼位置
-	*@author
 	*/
 	//class laya.ani.bone.PathConstraint
 	var PathConstraint=(function(){
@@ -768,7 +783,7 @@
 			var tScale=tRotateMode=="chainScale";
 			var lengths=[];
 			var boneCount=this.bones.length;
-			var spacesCount=tTangents?boneCount:boneCount+1;
+			var spacesCount=tTangents ? boneCount :boneCount+1;
 			var spaces=[];
 			this._spaces=spaces;
 			spaces[0]=this.position;
@@ -810,7 +825,8 @@
 				bone=this.bones[i];
 				bone.resultMatrix.tx+=(boneX-bone.resultMatrix.tx)*tTranslateMix;
 				bone.resultMatrix.ty+=(boneY-bone.resultMatrix.ty)*tTranslateMix;
-				x=positions[p];y=positions[p+1];
+				x=positions[p];
+				y=positions[p+1];
 				var dx=x-boneX,dy=y-boneY;
 				if (tScale){
 					length=lengths[i];
@@ -832,7 +848,7 @@
 					var sin=NaN;
 					if (tTangents){
 						r=positions[p-1];
-						}else if(spaces[i+1]==0){
+						}else if (spaces[i+1]==0){
 						r=positions[p+2];
 						}else {
 						r=Math.atan2(dy,dx);
@@ -897,7 +913,9 @@
 				n+=v;
 				for (;v < n;v++,b+=3){
 					tMatrix=skeletonBones[tBones[v]].resultMatrix;
-					vx=tWeights[b];vy=tWeights[b+1];var weight=tWeights[b+2];
+					vx=tWeights[b];
+					vy=tWeights[b+1];
+					var weight=tWeights[b+2];
 					wx+=(vx *tMatrix.a+vy *tMatrix.c+tMatrix.tx)*weight;
 					wy+=(vx *tMatrix.b+vy *tMatrix.d+tMatrix.ty)*weight;
 				}
@@ -998,8 +1016,7 @@
 						}else
 						this.computeWorldVertices2(target,boneList,curve *6+2,8,world,0);
 					}
-					this.addCurvePosition(p,world[0],world[1],world[2],world[3],world[4],world[5],world[6],world[7],out,o,
-					tangents || (i > 0 && space==0));
+					this.addCurvePosition(p,world[0],world[1],world[2],world[3],world[4],world[5],world[6],world[7],out,o,tangents || (i > 0 && space==0));
 				}
 				return out;
 			}
@@ -1180,10 +1197,6 @@
 	})()
 
 
-	/**
-	*...
-	*@author
-	*/
 	//class laya.ani.bone.PathConstraintData
 	var PathConstraintData=(function(){
 		function PathConstraintData(){
@@ -1273,10 +1286,6 @@
 	})()
 
 
-	/**
-	*...
-	*@author
-	*/
 	//class laya.ani.bone.TfConstraint
 	var TfConstraint=(function(){
 		function TfConstraint(data,bones){
@@ -1362,10 +1371,6 @@
 	})()
 
 
-	/**
-	*...
-	*@author
-	*/
 	//class laya.ani.bone.TfConstraintData
 	var TfConstraintData=(function(){
 		function TfConstraintData(){
@@ -2043,10 +2048,6 @@
 	})(EventDispatcher)
 
 
-	/**
-	*...
-	*@author
-	*/
 	//class laya.ani.GraphicsAni extends laya.display.Graphics
 	var GraphicsAni=(function(_super){
 		function GraphicsAni(){
@@ -3037,7 +3038,11 @@
 				if (!isNaN(tSlotData2)){
 					tDBBoneSlot.showDisplayByIndex(tSlotData2);
 				}
-				tDBBoneSlot.draw(tGraphics,this._boneMatrixArray,this._aniMode==2);
+				if (!isNaN(tSlotData3)){
+					tDBBoneSlot.draw(tGraphics,this._boneMatrixArray,this._aniMode==2,tSlotData3);
+					}else {
+					tDBBoneSlot.draw(tGraphics,this._boneMatrixArray,this._aniMode==2);
+				}
 				if (!isNaN(tSlotData3)){
 					tGraphics.restore();
 				}

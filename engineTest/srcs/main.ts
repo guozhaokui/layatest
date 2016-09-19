@@ -1,5 +1,6 @@
 'use strict';
-///<reference path="../conchinclude.d.ts" />
+///<reference path="../LayaConchRuntime.d.ts" />
+/*
 import * as conchAsync from 'Async'
 var canv = document.createElement('canvas');
 var ctx = canv.getContext('2d');
@@ -17,11 +18,9 @@ var datas=new Array<Vec3>(10).fill(new Vec3(0,0,0));
 
 //init
 async function init() {
-    /*
-    img1 = await conchAsync.loadImage('');
-    if (!img1)
-        return;
-    */
+    //img1 = await conchAsync.loadImage('');
+    //if (!img1)
+    //    return;
     ctx.fillStyle='#ffffff';
     datas.forEach((v,i,a)=>{
         v.z=i;
@@ -59,3 +58,4 @@ function render(x:number,y:number,w:number,h:number,left:boolean){
     ctx.restore();
 }
 
+*/

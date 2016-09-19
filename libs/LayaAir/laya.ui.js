@@ -7,10 +7,10 @@
 	var Handler=laya.utils.Handler,Input=laya.display.Input,Loader=laya.net.Loader,Node=laya.display.Node,Point=laya.maths.Point;
 	var Rectangle=laya.maths.Rectangle,Render=laya.renders.Render,Sprite=laya.display.Sprite,Stage=laya.display.Stage;
 	var Text=laya.display.Text,Texture=laya.resource.Texture,Tween=laya.utils.Tween,Utils=laya.utils.Utils;
-	Laya.interface('laya.ui.IRender');
-	Laya.interface('laya.ui.IItem');
-	Laya.interface('laya.ui.ISelect');
 	Laya.interface('laya.ui.IComponent');
+	Laya.interface('laya.ui.ISelect');
+	Laya.interface('laya.ui.IItem');
+	Laya.interface('laya.ui.IRender');
 	Laya.interface('laya.ui.IBox','IComponent');
 	/**
 	*<code>LayoutStyle</code> 是一个布局样式类。
@@ -4535,7 +4535,7 @@
 			if (child){
 				for (var i=0,n=child.length;i < n;i++){
 					var node=child[i];
-					if (comp.hasOwnProperty("itemRender")&& node.props.name=="render"){
+					if (comp.hasOwnProperty("itemRender")&& (node.props.name=="render"||node.props.renderType==="render")){
 						(comp).itemRender=node;
 					}else
 					if (node.type=="Graphic"){
@@ -4545,7 +4545,7 @@
 						ClassUtils.addGraphicToSprite(node,comp,true);
 						}else{
 						var tChild=View.createComp(node,null,view);
-						if (tChild.name=="mask"){
+						if (node.props.renderType=="mask"||node.props.name=="mask"){
 							comp.mask=tChild;
 							}else{
 							comp.addChild(tChild);

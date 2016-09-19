@@ -183,12 +183,12 @@ window.Laya=(function(window,document){
 
 (function(window,document,Laya){
 	var __un=Laya.un,__uns=Laya.uns,__static=Laya.static,__class=Laya.class,__getset=Laya.getset,__newvec=Laya.__newvec;
-	Laya.interface('laya.filters.IFilter');
-	Laya.interface('laya.runtime.IConchNode');
 	Laya.interface('laya.resource.IDispose');
-	Laya.interface('laya.runtime.IMarket');
-	Laya.interface('laya.filters.IFilterAction');
 	Laya.interface('laya.display.ILayout');
+	Laya.interface('laya.runtime.IMarket');
+	Laya.interface('laya.runtime.IConchNode');
+	Laya.interface('laya.filters.IFilterAction');
+	Laya.interface('laya.filters.IFilter');
 	/**
 	*@private
 	*/
@@ -7625,7 +7625,6 @@ window.Laya=(function(window,document){
 
 	/**
 	*基于个数的对象缓存管理器
-	*@author ww
 	*/
 	//class laya.utils.PoolCache
 	var PoolCache=(function(){
@@ -7853,6 +7852,7 @@ window.Laya=(function(window,document){
 	var Timer=(function(){
 		var TimerHandler;
 		function Timer(){
+			this._delta=0;
 			this.scale=1;
 			this.currFrame=0;
 			this._mid=1;
@@ -7879,8 +7879,8 @@ window.Laya=(function(window,document){
 			};
 			var frame=this.currFrame=this.currFrame+this.scale;
 			var now=Browser.now();
-			Timer.delta=now-this._lastTimer;
-			var timer=this.currTimer=this.currTimer+Timer.delta *this.scale;
+			this._delta=(now-this._lastTimer)*this.scale;
+			var timer=this.currTimer=this.currTimer+this._delta;
 			this._lastTimer=now;
 			var handlers=this._handlers;
 			this._count=0;
@@ -7969,6 +7969,7 @@ window.Laya=(function(window,document){
 
 		/**@private */
 		__proto._indexHandler=function(handler){
+			return;
 			var caller=handler.caller;
 			var method=handler.method;
 			var cid=caller ? caller.$_GID || (caller.$_GID=Utils.getGID()):0;
@@ -8100,7 +8101,13 @@ window.Laya=(function(window,document){
 			}
 		}
 
-		Timer.delta=0;
+		/**
+		*两帧之间的时间间隔,单位毫秒。
+		*/
+		__getset(0,__proto,'delta',function(){
+			return this._delta;
+		});
+
 		Timer._pool=[];
 		Timer.__init$=function(){
 			/**@private */
@@ -8561,8 +8568,7 @@ window.Laya=(function(window,document){
 
 
 	/**
-	*...
-	*@author
+	*@private
 	*/
 	//class laya.utils.VectorGraphManager
 	var VectorGraphManager=(function(){
@@ -10441,7 +10447,7 @@ window.Laya=(function(window,document){
 		*/
 		__proto.load=function(url,type,cache){
 			(cache===void 0)&& (cache=true);
-			url=URL.formatURL(url);
+			url=Loader._parseURL(url);
 			this._url=url;
 			this._type=type || (type=this.getTypeFromUrl(url));
 			this._cache=cache;
@@ -10668,6 +10674,18 @@ window.Laya=(function(window,document){
 			Loader._isWorking=false;
 		}
 
+		Loader._parseURL=function(url){
+			if (url.indexOf(",")< 0){
+				url=URL.formatURL(url);
+				}else {
+				var arr=url.split(",");
+				for (var i=arr.length-1;i >-1;i--)
+				arr[i]=URL.formatURL(arr[i]);
+				url=arr.join(",");
+			}
+			return url
+		}
+
 		Loader.clearRes=function(url){
 			url=URL.formatURL(url);
 			var arr=Loader.atlasMap[url];
@@ -10691,7 +10709,7 @@ window.Laya=(function(window,document){
 		}
 
 		Loader.getRes=function(url){
-			return Loader.loadedMap[URL.formatURL(url)];
+			return Loader.loadedMap[Loader._parseURL(url)];
 		}
 
 		Loader.getAtlas=function(url){
@@ -10761,7 +10779,7 @@ window.Laya=(function(window,document){
 			(priority===void 0)&& (priority=1);
 			(cache===void 0)&& (cache=true);
 			if ((url instanceof Array))return this._loadAssets(url,complete,progress,priority,cache);
-			url=URL.formatURL(url);
+			url=Loader._parseURL(url);
 			var content=Loader.getRes(url);
 			if (content !=null){
 				complete && complete.runWith(content);
@@ -15081,10 +15099,6 @@ window.Laya=(function(window,document){
 	})(Sprite)
 
 
-	/**
-	*...
-	*@author ww
-	*/
 	//class laya.media.SoundNode extends laya.display.Sprite
 	var SoundNode=(function(_super){
 		function SoundNode(){
@@ -15114,7 +15128,7 @@ window.Laya=(function(window,document){
 		*/
 		__proto.play=function(loops,complete){
 			(loops===void 0)&& (loops=1);
-			if(isNaN(loops)){
+			if (isNaN(loops)){
 				loops=1;
 			}
 			if (!this.url)return;
@@ -15138,9 +15152,9 @@ window.Laya=(function(window,document){
 			(add===void 0)&& (add=true);
 			if (!this[action])return;
 			if (!tar)return;
-			if(add){
+			if (add){
 				tar.on(event,this,this[action]);
-				}else{
+				}else {
 				tar.off(event,this,this[action]);
 			}
 		}
@@ -15148,8 +15162,8 @@ window.Laya=(function(window,document){
 		/**@private */
 		__proto._setPlayActions=function(tar,events,action,add){
 			(add===void 0)&& (add=true);
-			if(!tar)return;
-			if(!events)return;
+			if (!tar)return;
+			if (!events)return;
 			var eventArr=events.split(",");
 			var i=0,len=0;
 			len=eventArr.length;
@@ -15163,10 +15177,10 @@ window.Laya=(function(window,document){
 		*@param events
 		*
 		*/
-		__getset(0,__proto,'playEvents',null,function(events){
+		__getset(0,__proto,'playEvent',null,function(events){
 			this._playEvents=events;
 			if (!events)return;
-			if(this._tar){
+			if (this._tar){
 				this._setPlayActions(this._tar,events,"play");
 			}
 		});
@@ -15177,12 +15191,12 @@ window.Laya=(function(window,document){
 		*
 		*/
 		__getset(0,__proto,'target',null,function(tar){
-			if(this._tar){
+			if (this._tar){
 				this._setPlayActions(this._tar,this._playEvents,"play",false);
 				this._setPlayActions(this._tar,this._stopEvents,"stop",false);
 			}
 			this._tar=tar;
-			if(this._tar){
+			if (this._tar){
 				this._setPlayActions(this._tar,this._playEvents,"play",true);
 				this._setPlayActions(this._tar,this._stopEvents,"stop",true);
 			}
@@ -15193,10 +15207,10 @@ window.Laya=(function(window,document){
 		*@param events
 		*
 		*/
-		__getset(0,__proto,'stopEvents',null,function(events){
+		__getset(0,__proto,'stopEvent',null,function(events){
 			this._stopEvents=events;
 			if (!events)return;
-			if(this._tar){
+			if (this._tar){
 				this._setPlayActions(this._tar,events,"stop");
 			}
 		});
@@ -15205,13 +15219,6 @@ window.Laya=(function(window,document){
 	})(Sprite)
 
 
-	/**
-	*
-	*@author ww
-	*@version 1.0
-	*
-	*@created 2016-8-16 上午10:27:04
-	*/
 	//class laya.scene.Scene2D extends laya.display.Sprite
 	var Scene2D=(function(_super){
 		function Scene2D(){
