@@ -11,11 +11,11 @@
 	var RunDriver=laya.utils.RunDriver,Sprite=laya.display.Sprite,Stat=laya.utils.Stat,StringKey=laya.utils.StringKey;
 	var Style=laya.display.css.Style,System=laya.system.System,Texture=laya.resource.Texture,Utils=laya.utils.Utils;
 	var VectorGraphManager=laya.utils.VectorGraphManager,WordText=laya.utils.WordText;
-	Laya.interface('laya.webgl.text.ICharSegment');
-	Laya.interface('laya.webgl.canvas.save.ISaveData');
-	Laya.interface('laya.webgl.submit.ISubmit');
-	Laya.interface('laya.webgl.resource.IMergeAtlasBitmap');
 	Laya.interface('laya.webgl.shapes.IShape');
+	Laya.interface('laya.webgl.submit.ISubmit');
+	Laya.interface('laya.webgl.canvas.save.ISaveData');
+	Laya.interface('laya.webgl.resource.IMergeAtlasBitmap');
+	Laya.interface('laya.webgl.text.ICharSegment');
 	Laya.interface('laya.filters.IFilterActionGL','laya.filters.IFilterAction');
 	//class laya.filters.webgl.FilterActionGL
 	var FilterActionGL=(function(){
@@ -653,7 +653,7 @@
 			var len=this.geomatrys.length;
 			this.offset=si;
 			for (var i=this.geoStart;i < len;i++){
-				this.geomatrys[i].getData(this.ib,this.vb,this.vb.byteLength / (5 *4));
+				this.geomatrys[i].getData(this.ib,this.vb,this.vb.byteLength / 20);
 			}
 			this.geoStart=len;
 			this.count=(this.ib.byteLength-si)/ CONST3D2D.BYTES_PIDX;
@@ -985,24 +985,19 @@
 			this.mShaderValue=null;
 			this.mTexture=null;
 			this.transform=null;
+			this._start=-1;
+			this._indexStart=-1;
+			this._resultPs=null;
+			this._ps=null;
+			this._vb=null;
 		}
 
 		__class(FillTextureSprite,'laya.webgl.shader.d2.fillTexture.FillTextureSprite');
 		var __proto=FillTextureSprite.prototype;
 		__proto.initTexture=function(texture,x,y,width,height,offsetX,offsetY){
 			this.mTexture=texture;
-			if (this.mVBBuffer){
-				this.mVBBuffer.dispose();
-			}
-			if (this.mIBBuffer){
-				this.mIBBuffer.dispose();
-			}
-			this.mVBBuffer=VertexBuffer2D.create();
-			this.mIBBuffer=IndexBuffer2D.create();
-			this.mIBData=new Uint16Array();
-			var tVBArray;
-			var tIBArray;
-			tVBArray=[];
+			if (this._vb==null)this._vb=[];
+			this._vb.length=0;
 			var w=texture.bitmap.width,h=texture.bitmap.height,uv=texture.uv;
 			var tTextureX=uv[0] *w;
 			var tTextureY=uv[1] *h;
@@ -1016,18 +1011,15 @@
 			var tGreed=1;
 			var tBlue=1;
 			var tAlpha=1;
-			tVBArray.push(x,y,0,0,tRed,tGreed,tBlue,tAlpha);
-			tVBArray.push(x+tWidth,y,tU,0,tRed,tGreed,tBlue,tAlpha);
-			tVBArray.push(x+tWidth,y+tHeight,tU,tV,tRed,tGreed,tBlue,tAlpha);
-			tVBArray.push(x,y+tHeight,0,tV,tRed,tGreed,tBlue,tAlpha);
-			tIBArray=[];
-			tIBArray.push(0,1,3,3,1,2);
-			this.mEleNum=tIBArray.length;
-			this.mVBData=new Float32Array(tVBArray);
-			this.mIBData=new Uint16Array(tIBArray);
-			this.mVBBuffer.append(this.mVBData);
-			this.mIBBuffer.append(this.mIBData);
-			this.mTexture=texture;
+			this._vb.push(x,y,0,0,tRed,tGreed,tBlue,tAlpha);
+			this._vb.push(x+tWidth,y,tU,0,tRed,tGreed,tBlue,tAlpha);
+			this._vb.push(x+tWidth,y+tHeight,tU,tV,tRed,tGreed,tBlue,tAlpha);
+			this._vb.push(x,y+tHeight,0,tV,tRed,tGreed,tBlue,tAlpha);
+			if (this._ps==null)this._ps=[];
+			this._ps.length=0;
+			this._ps.push(0,1,3,3,1,2);
+			this.mEleNum=this._ps.length;
+			this.mVBData=new Float32Array(this._vb);
 			if (this.mShaderValue==null){
 				this.mShaderValue=new FillTextureShaderValue();
 			}
@@ -1039,10 +1031,26 @@
 			this.mShaderValue.u_texRange[3]=tTextureH / h;
 		}
 
+		__proto.getData=function(vb,ib,start){
+			this.mVBBuffer=vb;
+			this.mIBBuffer=ib;
+			vb.append(this.mVBData);
+			this._start=start;
+			this._indexStart=ib.byteLength;
+			if (this._resultPs==null)this._resultPs=[];
+			this._resultPs.length=0;
+			for (var i=0,n=this._ps.length;i < n;i++){
+				this._resultPs.push(this._ps[i]+start);
+			}
+			this.mIBData=new Uint16Array(this._resultPs);
+			ib.append(this.mIBData);
+		}
+
 		__proto.render=function(context,x,y){
 			if (Render.isWebGL){
+				SkinMeshBuffer.getInstance().addFillTexture(this);
 				this.mShaderValue.textureHost=this.mTexture;
-				context.setIBVB(x,y,this.mIBBuffer,this.mVBBuffer,this.mEleNum,this.transform,FillTextureShader.getInstance(),this.mShaderValue,0,0);
+				context.setIBVB(x,y,this.mIBBuffer,this.mVBBuffer,this.mEleNum,this.transform,FillTextureShader.getInstance(),this.mShaderValue,this._indexStart,0,1);
 			}
 		}
 
@@ -1066,25 +1074,25 @@
 
 		__class(Shader2D,'laya.webgl.shader.d2.Shader2D');
 		Shader2D.__init__=function(){
-			Shader.addInclude("parts/ColorFilter_ps_uniform.glsl","uniform vec4 colorAlpha;\nuniform mat4 colorMat;"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/colorfilter_ps_uniform.glsl*/);
-			Shader.addInclude("parts/ColorFilter_ps_logic.glsl","gl_FragColor = gl_FragColor * colorMat + colorAlpha/255.0;"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/colorfilter_ps_logic.glsl*/);
-			Shader.addInclude("parts/GlowFilter_ps_uniform.glsl","uniform vec4 u_color;\nuniform float u_strength;\nuniform float u_blurX;\nuniform float u_blurY;\nuniform float u_offsetX;\nuniform float u_offsetY;\nuniform float u_textW;\nuniform float u_textH;"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/glowfilter_ps_uniform.glsl*/);
-			Shader.addInclude("parts/GlowFilter_ps_logic.glsl","const float c_IterationTime = 10.0;\nfloat floatIterationTotalTime = c_IterationTime * c_IterationTime;\nvec4 vec4Color = vec4(0.0,0.0,0.0,0.0);\nvec2 vec2FilterDir = vec2(-(u_offsetX)/u_textW,-(u_offsetY)/u_textH);\nvec2 vec2FilterOff = vec2(u_blurX/u_textW/c_IterationTime * 2.0,u_blurY/u_textH/c_IterationTime * 2.0);\nfloat maxNum = u_blurX * u_blurY;\nvec2 vec2Off = vec2(0.0,0.0);\nfloat floatOff = c_IterationTime/2.0;\nfor(float i = 0.0;i<=c_IterationTime; ++i){\n	for(float j = 0.0;j<=c_IterationTime; ++j){\n		vec2Off = vec2(vec2FilterOff.x * (i - floatOff),vec2FilterOff.y * (j - floatOff));\n		vec4Color += texture2D(texture, v_texcoord + vec2FilterDir + vec2Off)/floatIterationTotalTime;\n	}\n}\ngl_FragColor = vec4(u_color.rgb,vec4Color.a * u_strength);"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/glowfilter_ps_logic.glsl*/);
-			Shader.addInclude("parts/BlurFilter_ps_logic.glsl","gl_FragColor=vec4(0.0);\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 0])*0.004431848411938341;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 1])*0.05399096651318985;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 2])*0.2419707245191454;\ngl_FragColor += texture2D(texture, v_texcoord        )*0.3989422804014327;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 3])*0.2419707245191454;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 4])*0.05399096651318985;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 5])*0.004431848411938341;"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/blurfilter_ps_logic.glsl*/);
-			Shader.addInclude("parts/BlurFilter_ps_uniform.glsl","varying vec2 vBlurTexCoords[6];"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/blurfilter_ps_uniform.glsl*/);
-			Shader.addInclude("parts/BlurFilter_vs_uniform.glsl","uniform float strength;\nvarying vec2 vBlurTexCoords[6];"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/blurfilter_vs_uniform.glsl*/);
-			Shader.addInclude("parts/BlurFilter_vs_logic.glsl","\nvBlurTexCoords[ 0] = v_texcoord + vec2(-0.012 * strength, 0.0);\nvBlurTexCoords[ 1] = v_texcoord + vec2(-0.008 * strength, 0.0);\nvBlurTexCoords[ 2] = v_texcoord + vec2(-0.004 * strength, 0.0);\nvBlurTexCoords[ 3] = v_texcoord + vec2( 0.004 * strength, 0.0);\nvBlurTexCoords[ 4] = v_texcoord + vec2( 0.008 * strength, 0.0);\nvBlurTexCoords[ 5] = v_texcoord + vec2( 0.012 * strength, 0.0);"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/blurfilter_vs_logic.glsl*/);
-			Shader.addInclude("parts/ColorAdd_ps_uniform.glsl","uniform vec4 colorAdd;\n"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/coloradd_ps_uniform.glsl*/);
-			Shader.addInclude("parts/ColorAdd_ps_logic.glsl","gl_FragColor = vec4(colorAdd.rgb,colorAdd.a*gl_FragColor.a);"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/parts/coloradd_ps_logic.glsl*/);
+			Shader.addInclude("parts/ColorFilter_ps_uniform.glsl","uniform vec4 colorAlpha;\nuniform mat4 colorMat;"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/colorfilter_ps_uniform.glsl*/);
+			Shader.addInclude("parts/ColorFilter_ps_logic.glsl","gl_FragColor = gl_FragColor * colorMat + colorAlpha/255.0;"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/colorfilter_ps_logic.glsl*/);
+			Shader.addInclude("parts/GlowFilter_ps_uniform.glsl","uniform vec4 u_color;\nuniform float u_strength;\nuniform float u_blurX;\nuniform float u_blurY;\nuniform float u_offsetX;\nuniform float u_offsetY;\nuniform float u_textW;\nuniform float u_textH;"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/glowfilter_ps_uniform.glsl*/);
+			Shader.addInclude("parts/GlowFilter_ps_logic.glsl","const float c_IterationTime = 10.0;\nfloat floatIterationTotalTime = c_IterationTime * c_IterationTime;\nvec4 vec4Color = vec4(0.0,0.0,0.0,0.0);\nvec2 vec2FilterDir = vec2(-(u_offsetX)/u_textW,-(u_offsetY)/u_textH);\nvec2 vec2FilterOff = vec2(u_blurX/u_textW/c_IterationTime * 2.0,u_blurY/u_textH/c_IterationTime * 2.0);\nfloat maxNum = u_blurX * u_blurY;\nvec2 vec2Off = vec2(0.0,0.0);\nfloat floatOff = c_IterationTime/2.0;\nfor(float i = 0.0;i<=c_IterationTime; ++i){\n	for(float j = 0.0;j<=c_IterationTime; ++j){\n		vec2Off = vec2(vec2FilterOff.x * (i - floatOff),vec2FilterOff.y * (j - floatOff));\n		vec4Color += texture2D(texture, v_texcoord + vec2FilterDir + vec2Off)/floatIterationTotalTime;\n	}\n}\ngl_FragColor = vec4(u_color.rgb,vec4Color.a * u_strength);"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/glowfilter_ps_logic.glsl*/);
+			Shader.addInclude("parts/BlurFilter_ps_logic.glsl","gl_FragColor=vec4(0.0);\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 0])*0.004431848411938341;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 1])*0.05399096651318985;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 2])*0.2419707245191454;\ngl_FragColor += texture2D(texture, v_texcoord        )*0.3989422804014327;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 3])*0.2419707245191454;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 4])*0.05399096651318985;\ngl_FragColor += texture2D(texture, vBlurTexCoords[ 5])*0.004431848411938341;"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/blurfilter_ps_logic.glsl*/);
+			Shader.addInclude("parts/BlurFilter_ps_uniform.glsl","varying vec2 vBlurTexCoords[6];"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/blurfilter_ps_uniform.glsl*/);
+			Shader.addInclude("parts/BlurFilter_vs_uniform.glsl","uniform float strength;\nvarying vec2 vBlurTexCoords[6];"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/blurfilter_vs_uniform.glsl*/);
+			Shader.addInclude("parts/BlurFilter_vs_logic.glsl","\nvBlurTexCoords[ 0] = v_texcoord + vec2(-0.012 * strength, 0.0);\nvBlurTexCoords[ 1] = v_texcoord + vec2(-0.008 * strength, 0.0);\nvBlurTexCoords[ 2] = v_texcoord + vec2(-0.004 * strength, 0.0);\nvBlurTexCoords[ 3] = v_texcoord + vec2( 0.004 * strength, 0.0);\nvBlurTexCoords[ 4] = v_texcoord + vec2( 0.008 * strength, 0.0);\nvBlurTexCoords[ 5] = v_texcoord + vec2( 0.012 * strength, 0.0);"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/blurfilter_vs_logic.glsl*/);
+			Shader.addInclude("parts/ColorAdd_ps_uniform.glsl","uniform vec4 colorAdd;\n"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/coloradd_ps_uniform.glsl*/);
+			Shader.addInclude("parts/ColorAdd_ps_logic.glsl","gl_FragColor = vec4(colorAdd.rgb,colorAdd.a*gl_FragColor.a);"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/parts/coloradd_ps_logic.glsl*/);
 			var vs,ps;
-			vs="attribute vec4 position;\nattribute vec2 texcoord;\nuniform vec2 size;\n\n#ifdef WORLDMAT\nuniform mat4 mmat;\n#endif\nvarying vec2 v_texcoord;\n\n#include?BLUR_FILTER  \"parts/BlurFilter_vs_uniform.glsl\";\nvoid main() {\n  #ifdef WORLDMAT\n  vec4 pos=mmat*position;\n  gl_Position =vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n  #else\n  gl_Position =vec4((position.x/size.x-0.5)*2.0,(0.5-position.y/size.y)*2.0,position.z,1.0);\n  #endif\n  \n  v_texcoord = texcoord;\n  #include?BLUR_FILTER  \"parts/BlurFilter_vs_logic.glsl\";\n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/texture.vs*/;
-			ps="precision mediump float;\n//precision highp float;\nvarying vec2 v_texcoord;\nuniform sampler2D texture;\nuniform float alpha;\n#include?BLUR_FILTER  \"parts/BlurFilter_ps_uniform.glsl\";\n#include?COLOR_FILTER \"parts/ColorFilter_ps_uniform.glsl\";\n#include?GLOW_FILTER \"parts/GlowFilter_ps_uniform.glsl\";\n#include?COLOR_ADD \"parts/ColorAdd_ps_uniform.glsl\";\n\nvoid main() {\n   vec4 color= texture2D(texture, v_texcoord);\n   color.a*=alpha;\n   gl_FragColor=color;\n   #include?COLOR_ADD \"parts/ColorAdd_ps_logic.glsl\";   \n   #include?BLUR_FILTER  \"parts/BlurFilter_ps_logic.glsl\";\n   #include?COLOR_FILTER \"parts/ColorFilter_ps_logic.glsl\";\n   #include?GLOW_FILTER \"parts/GlowFilter_ps_logic.glsl\";\n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/texture.ps*/;
+			vs="attribute vec4 position;\nattribute vec2 texcoord;\nuniform vec2 size;\n\n#ifdef WORLDMAT\nuniform mat4 mmat;\n#endif\nvarying vec2 v_texcoord;\n\n#include?BLUR_FILTER  \"parts/BlurFilter_vs_uniform.glsl\";\nvoid main() {\n  #ifdef WORLDMAT\n  vec4 pos=mmat*position;\n  gl_Position =vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n  #else\n  gl_Position =vec4((position.x/size.x-0.5)*2.0,(0.5-position.y/size.y)*2.0,position.z,1.0);\n  #endif\n  \n  v_texcoord = texcoord;\n  #include?BLUR_FILTER  \"parts/BlurFilter_vs_logic.glsl\";\n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/texture.vs*/;
+			ps="precision mediump float;\n//precision highp float;\nvarying vec2 v_texcoord;\nuniform sampler2D texture;\nuniform float alpha;\n#include?BLUR_FILTER  \"parts/BlurFilter_ps_uniform.glsl\";\n#include?COLOR_FILTER \"parts/ColorFilter_ps_uniform.glsl\";\n#include?GLOW_FILTER \"parts/GlowFilter_ps_uniform.glsl\";\n#include?COLOR_ADD \"parts/ColorAdd_ps_uniform.glsl\";\n\nvoid main() {\n   vec4 color= texture2D(texture, v_texcoord);\n   color.a*=alpha;\n   gl_FragColor=color;\n   #include?COLOR_ADD \"parts/ColorAdd_ps_logic.glsl\";   \n   #include?BLUR_FILTER  \"parts/BlurFilter_ps_logic.glsl\";\n   #include?COLOR_FILTER \"parts/ColorFilter_ps_logic.glsl\";\n   #include?GLOW_FILTER \"parts/GlowFilter_ps_logic.glsl\";\n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/texture.ps*/;
 			Shader.preCompile(0,/*laya.webgl.shader.d2.ShaderDefines2D.TEXTURE2D*/0x01,vs,ps,null);
-			vs="attribute vec4 position;\nuniform vec2 size;\nuniform mat4 mmat;\nvoid main() {\n  vec4 pos=mmat*position;\n  gl_Position =vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/line.vs*/;
-			ps="precision mediump float;\nuniform vec4 color;\nuniform float alpha;\n#include?COLOR_FILTER \"parts/ColorFilter_ps_uniform.glsl\";\nvoid main() {\n	vec4 a = vec4(color.r, color.g, color.b, color.a);\n	a.w = alpha;\n	gl_FragColor = a;\n	#include?COLOR_FILTER \"parts/ColorFilter_ps_logic.glsl\";\n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/line.ps*/;
+			vs="attribute vec4 position;\nuniform vec2 size;\nuniform mat4 mmat;\nvoid main() {\n  vec4 pos=mmat*position;\n  gl_Position =vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/line.vs*/;
+			ps="precision mediump float;\nuniform vec4 color;\nuniform float alpha;\n#include?COLOR_FILTER \"parts/ColorFilter_ps_uniform.glsl\";\nvoid main() {\n	vec4 a = vec4(color.r, color.g, color.b, color.a);\n	a.w = alpha;\n	gl_FragColor = a;\n	#include?COLOR_FILTER \"parts/ColorFilter_ps_logic.glsl\";\n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/line.ps*/;
 			Shader.preCompile(0,/*laya.webgl.shader.d2.ShaderDefines2D.COLOR2D*/0x02,vs,ps,null);
-			vs="attribute vec4 position;\nattribute vec3 a_color;\nuniform mat4 mmat;\nuniform mat4 u_mmat2;\nuniform vec2 u_pos;\nuniform vec2 size;\nvarying vec3 color;\nvoid main(){\n  vec4 tPos = vec4(position.x + u_pos.x,position.y + u_pos.y,position.z,position.w);\n  vec4 pos=mmat*u_mmat2*tPos;\n  gl_Position =vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n  color=a_color;\n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/primitive.vs*/;
-			ps="precision mediump float;\n//precision mediump float;\nvarying vec3 color;\nuniform float alpha;\nvoid main(){\n	//vec4 a=vec4(color.r, color.g, color.b, 1);\n	//a.a*=alpha;\n    gl_FragColor=vec4(color.r, color.g, color.b, alpha);\n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/files/primitive.ps*/;
+			vs="attribute vec4 position;\nattribute vec3 a_color;\nuniform mat4 mmat;\nuniform mat4 u_mmat2;\nuniform vec2 u_pos;\nuniform vec2 size;\nvarying vec3 color;\nvoid main(){\n  vec4 tPos = vec4(position.x + u_pos.x,position.y + u_pos.y,position.z,position.w);\n  vec4 pos=mmat*u_mmat2*tPos;\n  gl_Position =vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n  color=a_color;\n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/primitive.vs*/;
+			ps="precision mediump float;\n//precision mediump float;\nvarying vec3 color;\nuniform float alpha;\nvoid main(){\n	//vec4 a=vec4(color.r, color.g, color.b, 1);\n	//a.a*=alpha;\n    gl_FragColor=vec4(color.r, color.g, color.b, alpha);\n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/files/primitive.ps*/;
 			Shader.preCompile(0,/*laya.webgl.shader.d2.ShaderDefines2D.PRIMITIVE*/0x04,vs,ps,null);
 		}
 
@@ -1183,71 +1191,111 @@
 	//class laya.webgl.shader.d2.skinAnishader.SkinMesh
 	var SkinMesh=(function(){
 		function SkinMesh(){
+			this.mShaderValue=null;
 			this.mVBBuffer=null;
 			this.mIBBuffer=null;
 			this.mVBData=null;
 			this.mIBData=null;
 			this.mEleNum=0;
-			this.mShaderValue=null;
 			this.mTexture=null;
 			this.transform=null;
+			this._vs=null;
+			this._ps=null;
+			this._resultPs=null;
+			this._start=-1;
+			this._indexStart=-1;
 		}
 
 		__class(SkinMesh,'laya.webgl.shader.d2.skinAnishader.SkinMesh');
 		var __proto=SkinMesh.prototype;
 		__proto.init=function(texture,vs,ps){
-			if (this.mVBBuffer){
-				this.mVBBuffer.clear();
-				}else {
-				this.mVBBuffer=VertexBuffer2D.create();
-			}
-			if (this.mIBBuffer){
-				this.mIBBuffer.clear();
-				}else {
-				this.mIBBuffer=IndexBuffer2D.create();
-			};
-			var tVBArray;
-			var tIBArray;
 			if (vs){
-				tVBArray=vs;
+				this._vs=vs;
 				}else {
-				tVBArray=[];
+				this._vs=[];
 				var tWidth=texture.width;
 				var tHeight=texture.height;
 				var tRed=1;
 				var tGreed=1;
 				var tBlue=1;
 				var tAlpha=1;
-				tVBArray.push(0,0,0,0,tRed,tGreed,tBlue,tAlpha);
-				tVBArray.push(tWidth,0,1,0,tRed,tGreed,tBlue,tAlpha);
-				tVBArray.push(tWidth,tHeight,1,1,tRed,tGreed,tBlue,tAlpha);
-				tVBArray.push(0,tHeight,0,1,tRed,tGreed,tBlue,tAlpha);
+				this._vs.push(0,0,0,0,tRed,tGreed,tBlue,tAlpha);
+				this._vs.push(tWidth,0,1,0,tRed,tGreed,tBlue,tAlpha);
+				this._vs.push(tWidth,tHeight,1,1,tRed,tGreed,tBlue,tAlpha);
+				this._vs.push(0,tHeight,0,1,tRed,tGreed,tBlue,tAlpha);
 			}
 			if (ps){
-				tIBArray=ps;
+				this._ps=ps;
 				}else {
-				tIBArray=[];
-				tIBArray.push(0,1,3,3,1,2);
+				this._ps=[];
+				this._ps.push(0,1,3,3,1,2);
 			}
-			this.mEleNum=tIBArray.length;
-			this.mVBData=new Float32Array(tVBArray);
-			this.mIBData=new Uint16Array(tIBArray);
-			this.mVBBuffer.append(this.mVBData);
-			this.mIBBuffer.append(this.mIBData);
+			this.mVBData=new Float32Array(this._vs);
+			this.mEleNum=this._ps.length;
 			this.mTexture=texture;
 			if (this.mShaderValue==null){
 				this.mShaderValue=new aniShaderValue();
 			}
 		}
 
+		__proto.getData=function(vb,ib,start){
+			this.mVBBuffer=vb;
+			this.mIBBuffer=ib;
+			vb.append(this.mVBData);
+			this._start=start;
+			this._indexStart=ib.byteLength;
+			if (this._resultPs==null)this._resultPs=[];
+			this._resultPs.length=0;
+			for (var i=0,n=this._ps.length;i < n;i++){
+				this._resultPs.push(this._ps[i]+start);
+			}
+			this.mIBData=new Uint16Array(this._resultPs);
+			ib.append(this.mIBData);
+		}
+
 		__proto.render=function(context,x,y){
 			if (Render.isWebGL){
 				this.mShaderValue.textureHost=this.mTexture;
-				(context).setIBVB(x,y,this.mIBBuffer,this.mVBBuffer,this.mEleNum,this.transform,SkinAniShader.getInstance(),this.mShaderValue,0,0);
+				SkinMeshBuffer.getInstance().addSkinMesh(this);
+				(context).setIBVB(x,y,this.mIBBuffer,this.mVBBuffer,this.mEleNum,this.transform,SkinAniShader.getInstance(),this.mShaderValue,this._indexStart,0,1);
 			}
 		}
 
 		return SkinMesh;
+	})()
+
+
+	//class laya.webgl.shader.d2.skinAnishader.SkinMeshBuffer
+	var SkinMeshBuffer=(function(){
+		function SkinMeshBuffer(){
+			this.ib=null;
+			this.vb=null;
+			var gl=WebGL.mainContext;
+			this.ib=IndexBuffer2D.create(/*laya.webgl.WebGLContext.DYNAMIC_DRAW*/0x88E8);
+			this.vb=VertexBuffer2D.create(8);
+		}
+
+		__class(SkinMeshBuffer,'laya.webgl.shader.d2.skinAnishader.SkinMeshBuffer');
+		var __proto=SkinMeshBuffer.prototype;
+		__proto.addSkinMesh=function(skinMesh){
+			skinMesh.getData(this.vb,this.ib,this.vb.byteLength / 32);
+		}
+
+		__proto.addFillTexture=function(fillTexture){
+			fillTexture.getData(this.vb,this.ib,this.vb.byteLength / 32);
+		}
+
+		__proto.reset=function(){
+			this.vb.clear();
+			this.ib.clear();
+		}
+
+		SkinMeshBuffer.getInstance=function(){
+			return SkinMeshBuffer.instance=SkinMeshBuffer.instance|| new SkinMeshBuffer();
+		}
+
+		SkinMeshBuffer.instance=null
+		return SkinMeshBuffer;
 	})()
 
 
@@ -1841,7 +1889,8 @@
 			return 1;
 		}
 
-		SubmitOtherIBVB.create=function(context,vb,ib,numElement,shader,shaderValue,startIndex,offset){
+		SubmitOtherIBVB.create=function(context,vb,ib,numElement,shader,shaderValue,startIndex,offset,type){
+			(type===void 0)&& (type=0);
 			var o=(!SubmitOtherIBVB._cache._length)? (new SubmitOtherIBVB()):SubmitOtherIBVB._cache[--SubmitOtherIBVB._cache._length];
 			o._ib=ib;
 			o._vb=vb;
@@ -1850,9 +1899,17 @@
 			o._shaderValue=shaderValue;
 			var blendType=context._nBlendType;
 			o._blendFn=context._targets ? BlendMode.targetFns[blendType] :BlendMode.fns[blendType];
-			o.offset=0;
-			o.startIndex=offset / (CONST3D2D.BYTES_PE *vb.vertexStride)*1.5;
-			o.startIndex *=CONST3D2D.BYTES_PIDX;
+			switch(type){
+				case 0:
+					o.offset=0;
+					o.startIndex=offset / (CONST3D2D.BYTES_PE *vb.vertexStride)*1.5;
+					o.startIndex *=CONST3D2D.BYTES_PIDX;
+					break ;
+				case 1:
+					o.startIndex=startIndex;
+					o.offset=offset;
+					break ;
+				}
 			return o;
 		}
 
@@ -3207,8 +3264,8 @@
 			}
 			if (!WebGL.isWebGLSupported())return false;
 			if (Render.isWebGL)return true;
-			HTMLImage.create=function (src){
-				return new WebGLImage(src);
+			HTMLImage.create=function (src,def){
+				return new WebGLImage(src,def);
 			}
 			Render.WebGL=WebGL;
 			Render.isWebGL=true;
@@ -4155,9 +4212,10 @@
 			this._curSubmit=Submit.RENDERBASE;
 		}
 
-		__proto.setIBVB=function(x,y,ib,vb,numElement,mat,shader,shaderValues,startIndex,offset){
+		__proto.setIBVB=function(x,y,ib,vb,numElement,mat,shader,shaderValues,startIndex,offset,type){
 			(startIndex===void 0)&& (startIndex=0);
 			(offset===void 0)&& (offset=0);
+			(type===void 0)&& (type=0);
 			if (ib===null){
 				if (!Render.isFlash){
 					ib=this._ib;
@@ -4171,7 +4229,7 @@
 			}
 			if (!shaderValues || !shader)
 				throw Error("setIBVB must input:shader shaderValues");
-			var submit=SubmitOtherIBVB.create(this,vb,ib,numElement,shader,shaderValues,startIndex,offset);
+			var submit=SubmitOtherIBVB.create(this,vb,ib,numElement,shader,shaderValues,startIndex,offset,type);
 			mat || (mat=Matrix.EMPTY);
 			mat.translate(x,y);
 			Matrix.mul(mat,this._curMat,submit._mat);
@@ -4228,6 +4286,7 @@
 			}
 			this.submitElement(0,this._submits._length);
 			this._path && this._path.reset();
+			SkinMeshBuffer.instance && SkinMeshBuffer.getInstance().reset();
 			this._curSubmit=Submit.RENDERBASE;
 			return this._submits._length;
 		}
@@ -5258,6 +5317,7 @@
 	var Polygon=(function(_super){
 		function Polygon(x,y,points,color,borderWidth,borderColor){
 			this._points=null;
+			this._start=-1;
 			this.mUint16Array=null;
 			this.mFloat32Array=null;
 			this._points=points.slice(0,points.length);
@@ -5267,14 +5327,26 @@
 		__class(Polygon,'laya.webgl.shapes.Polygon',_super);
 		var __proto=Polygon.prototype;
 		__proto.getData=function(ib,vb,start){
-			if (!(this.mUint16Array && this.mFloat32Array)){
-				var indices=[];
+			var indices,i=0;
+			var tArray=this._points;
+			var tLen=0;
+			if (this.mUint16Array && this.mFloat32Array){
+				if (this._start !=start){
+					this._start=start;
+					indices=[];
+					tLen=Math.floor(tArray.length / 2);
+					for (i=2;i < tLen;i++){
+						indices.push(start,start+i-1,start+i);
+					}
+					this.mUint16Array=new Uint16Array(indices);
+				}
+				}else {
+				this._start=start;
+				indices=[];
 				var verts=[];
 				var color=this.color;
 				var r=((color >> 16)& 0x0000ff)/ 255,g=((color >> 8)& 0xff)/ 255,b=(color & 0x0000ff)/ 255;
-				var tArray;
-				tArray=this._points;
-				var i=0,tLen=Math.floor(tArray.length / 2);
+				tLen=Math.floor(tArray.length / 2);
 				for (i=0;i < tLen;i++){
 					verts.push(this.x+tArray[i *2],this.y+tArray[i *2+1],r,g,b);
 				}
@@ -5532,7 +5604,7 @@
 		__proto.recreateResource=function(){
 			this.startCreate();
 			this._compile();
-			this.compoleteCreate();
+			this.completeCreate();
 			this.memorySize=0;
 		}
 
@@ -6196,7 +6268,7 @@
 		__proto.recreateResource=function(){
 			this.startCreate();
 			this._glBuffer || (this._glBuffer=Buffer._gl.createBuffer());
-			this.compoleteCreate();
+			this.completeCreate();
 		}
 
 		__proto.detoryResource=function(){
@@ -6361,7 +6433,7 @@
 			gl.texParameteri(/*laya.webgl.WebGLContext.TEXTURE_2D*/0x0DE1,/*laya.webgl.WebGLContext.TEXTURE_WRAP_T*/0x2803,/*laya.webgl.WebGLContext.CLAMP_TO_EDGE*/0x812F);
 			(preTarget && preTexture)&& (WebGLContext.bindTexture(gl,preTarget,preTexture));
 			this.memorySize=this._w *this._h *4;
-			this.compoleteCreate();
+			this.completeCreate();
 		}
 
 		/***销毁资源*/
@@ -6499,7 +6571,7 @@
 	__proto.recreateResource=function(){
 		this.startCreate();
 		this.createWebGlTexture();
-		this.compoleteCreate();
+		this.completeCreate();
 	}
 
 
@@ -6659,7 +6731,7 @@
 				this._ctx.restore();
 			}
 			char.borderSize=this.borderSize;
-			this.compoleteCreate();
+			this.completeCreate();
 		}
 
 		__proto.onresize=function(w,h){
@@ -6827,7 +6899,7 @@
 						if (!_this._images[j].complete)
 							return;
 						_this._createWebGlTexture();
-						_this.compoleteCreate();
+						_this.completeCreate();
 					};
 					this._images[i].src=this._srcs[i];
 				}
@@ -6837,7 +6909,7 @@
 				}
 				this.startCreate();
 				this._createWebGlTexture();
-				this.compoleteCreate();
+				this.completeCreate();
 			}
 		}
 
@@ -6951,7 +7023,7 @@
 			(preTarget && preTexture)&& (WebGLContext.bindTexture(gl,preTarget,preTexture));
 			gl.bindRenderbuffer(/*laya.webgl.WebGLContext.RENDERBUFFER*/0x8D41,null);
 			this.memorySize=this._w *this._h *4;
-			this.compoleteCreate();
+			this.completeCreate();
 		}
 
 		__proto.detoryResource=function(){
@@ -7033,7 +7105,7 @@
 		this.size(this._w,this._h);
 		this._ctx.drawImage(this.atlasImage,this.offsetX,this.offsetY,this._w,this._h,0,0,this._w,this._h);
 		(!(AtlasResourceManager.enabled && this._allowMerageInAtlas))&& (this.createWebGlTexture());
-		this.compoleteCreate();
+		this.completeCreate();
 	}
 
 
@@ -7137,8 +7209,8 @@
 	//class laya.webgl.shader.d2.fillTexture.FillTextureShader extends laya.webgl.shader.Shader
 	var FillTextureShader=(function(_super){
 		function FillTextureShader(){
-			var vs="attribute vec2 position;\nattribute vec2 texcoord;\nattribute vec4 color;\nuniform vec2 size;\nuniform mat4 mmat;\nvarying vec2 v_texcoord;\nvarying vec4 v_color;\nvoid main() {\n  vec4 pos=mmat*vec4(position.x,position.y,0,1 );\n  gl_Position = vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n  v_color = color;\n  v_texcoord = texcoord;  \n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/filltexture/filltextureshader.vs*/;
-			var ps="precision mediump float;\nvarying vec2 v_texcoord;\nvarying vec4 v_color;\nuniform sampler2D texture;\nuniform vec4 u_texRange;\nuniform vec2 u_offset;\nvoid main() {\n	vec2 newTexCoord;\n	newTexCoord.x = mod(((u_offset.x + v_texcoord.x) * u_texRange.y),u_texRange.y) + u_texRange.x;\n	newTexCoord.y = mod(((u_offset.y + v_texcoord.y) * u_texRange.w),u_texRange.w) + u_texRange.z;\n	vec4 t_color = texture2D(texture, newTexCoord);\n	gl_FragColor = t_color.rgba;\n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/filltexture/filltextureshader.ps*/;
+			var vs="attribute vec2 position;\nattribute vec2 texcoord;\nattribute vec4 color;\nuniform vec2 size;\nuniform mat4 mmat;\nvarying vec2 v_texcoord;\nvarying vec4 v_color;\nvoid main() {\n  vec4 pos=mmat*vec4(position.x,position.y,0,1 );\n  gl_Position = vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n  v_color = color;\n  v_texcoord = texcoord;  \n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/filltexture/filltextureshader.vs*/;
+			var ps="precision mediump float;\nvarying vec2 v_texcoord;\nvarying vec4 v_color;\nuniform sampler2D texture;\nuniform vec4 u_texRange;\nuniform vec2 u_offset;\nvoid main() {\n	vec2 newTexCoord;\n	newTexCoord.x = mod(((u_offset.x + v_texcoord.x) * u_texRange.y),u_texRange.y) + u_texRange.x;\n	newTexCoord.y = mod(((u_offset.y + v_texcoord.y) * u_texRange.w),u_texRange.w) + u_texRange.z;\n	vec4 t_color = texture2D(texture, newTexCoord);\n	gl_FragColor = t_color * v_color;\n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/filltexture/filltextureshader.ps*/;
 			FillTextureShader.__super.call(this,vs,ps,"fillTextureShader");
 		}
 
@@ -7217,8 +7289,8 @@
 	//class laya.webgl.shader.d2.skinAnishader.SkinAniShader extends laya.webgl.shader.Shader
 	var SkinAniShader=(function(_super){
 		function SkinAniShader(){
-			var vs="attribute vec2 position;\nattribute vec2 texcoord;\nattribute vec4 color;\nuniform vec2 size;\nuniform mat4 mmat;\nvarying vec2 v_texcoord;\nvarying vec4 v_color;\nvoid main() {\n  vec4 pos=mmat*vec4(position.x,position.y,0,1 );\n  gl_Position = vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n  v_color = color;\n  v_texcoord = texcoord;  \n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/skinanishader/anishader.vs*/;
-			var ps="precision mediump float;\nvarying vec2 v_texcoord;\nvarying vec4 v_color;\nuniform sampler2D texture;\nvoid main() {\n	vec4 t_color = texture2D(texture, v_texcoord);\n	gl_FragColor = t_color.rgba;\n}"/*__INCLUDESTR__d:/layabox/layaair20160914/layaair/webgl/src/laya/webgl/shader/d2/skinanishader/anishader.ps*/;
+			var vs="attribute vec2 position;\nattribute vec2 texcoord;\nattribute vec4 color;\nuniform vec2 size;\nuniform mat4 mmat;\nvarying vec2 v_texcoord;\nvarying vec4 v_color;\nvoid main() {\n  vec4 pos=mmat*vec4(position.x,position.y,0,1 );\n  gl_Position = vec4((pos.x/size.x-0.5)*2.0,(0.5-pos.y/size.y)*2.0,pos.z,1.0);\n  v_color = color;\n  v_texcoord = texcoord;  \n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/skinanishader/anishader.vs*/;
+			var ps="precision mediump float;\nvarying vec2 v_texcoord;\nvarying vec4 v_color;\nuniform sampler2D texture;\nvoid main() {\n	vec4 t_color = texture2D(texture, v_texcoord);\n	gl_FragColor = t_color.rgba * v_color;\n}"/*__INCLUDESTR__f:/work/layaairpublish/src/webgl/src/laya/webgl/shader/d2/skinanishader/anishader.ps*/;
 			SkinAniShader.__super.call(this,vs,ps,"SpineShader");
 		}
 
@@ -7600,7 +7672,6 @@
 		});
 
 		VertexBuffer2D.create=function(vertexStride,bufferUsage){
-			(vertexStride===void 0)&& (vertexStride=undefined);
 			(bufferUsage===void 0)&& (bufferUsage=/*laya.webgl.WebGLContext.DYNAMIC_DRAW*/0x88E8);
 			return new VertexBuffer2D(vertexStride,bufferUsage);
 		}
@@ -7611,7 +7682,7 @@
 
 	//class laya.webgl.resource.WebGLImage extends laya.resource.HTMLImage
 	var WebGLImage=(function(_super){
-		function WebGLImage(src){
+		function WebGLImage(src,def){
 			this._image=null;
 			this._allowMerageInAtlas=false;
 			this._enableMerageInAtlas=false;
@@ -7619,23 +7690,27 @@
 			this.mipmap=false;
 			this.minFifter=0;
 			this.magFifter=0;
-			WebGLImage.__super.call(this,src);
+			WebGLImage.__super.call(this,src,def);
 			this.repeat=false;
 			this.mipmap=false;
 			this.minFifter=-1;
 			this.magFifter=-1;
 			this._src=src;
 			this._image=new Browser.window.Image();
+			if (def){
+				def.onload && (this.onload=def.onload);
+				def.onerror && (this.onerror=def.onerror);
+				def.onCreate && def.onCreate(this);
+			}
 			this._image.crossOrigin="";
 			(src)&& (this._image.src=src);
-			(!Render.is3DMode)&& (this._enableMerageInAtlas=true);
+			this._enableMerageInAtlas=true;
 		}
 
 		__class(WebGLImage,'laya.webgl.resource.WebGLImage',_super);
 		var __proto=WebGLImage.prototype;
 		Laya.imps(__proto,{"laya.webgl.resource.IMergeAtlasBitmap":true})
-		//TODO:2D,3D需要分开
-		__proto._init_=function(src){}
+		__proto._init_=function(src,def){}
 		__proto._createWebGlTexture=function(){
 			if (!this._image){
 				throw "create GLTextur err:no data:"+this._image;
@@ -7699,7 +7774,7 @@
 						return;
 					}
 					(!(_this._allowMerageInAtlas && _this._enableMerageInAtlas))? (_this._createWebGlTexture()):(_$this.memorySize=0,_$this._recreateLock=false);
-					_this.compoleteCreate();
+					_this.completeCreate();
 				};
 				this._image.src=this._src;
 				}else {
@@ -7708,7 +7783,7 @@
 				}
 				this.startCreate();
 				(!(this._allowMerageInAtlas && this._enableMerageInAtlas))? (this._createWebGlTexture()):(this.memorySize=0,this._recreateLock=false);
-				this.compoleteCreate();
+				this.completeCreate();
 			}
 		}
 

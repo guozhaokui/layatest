@@ -2,15 +2,16 @@
 (function(window,document,Laya){
 	var __un=Laya.un,__uns=Laya.uns,__static=Laya.static,__class=Laya.class,__getset=Laya.getset,__newvec=Laya.__newvec;
 
-	var ClassUtils=laya.utils.ClassUtils,ColorFilter=laya.filters.ColorFilter,Ease=laya.utils.Ease,Event=laya.events.Event;
-	var Font=laya.display.css.Font,FrameAnimation=laya.display.FrameAnimation,Graphics=laya.display.Graphics;
-	var Handler=laya.utils.Handler,Input=laya.display.Input,Loader=laya.net.Loader,Node=laya.display.Node,Point=laya.maths.Point;
-	var Rectangle=laya.maths.Rectangle,Render=laya.renders.Render,Sprite=laya.display.Sprite,Stage=laya.display.Stage;
-	var Text=laya.display.Text,Texture=laya.resource.Texture,Tween=laya.utils.Tween,Utils=laya.utils.Utils;
-	Laya.interface('laya.ui.IComponent');
+	var Animation=laya.display.Animation,ClassUtils=laya.utils.ClassUtils,ColorFilter=laya.filters.ColorFilter;
+	var Ease=laya.utils.Ease,Event=laya.events.Event,Font=laya.display.css.Font,FrameAnimation=laya.display.FrameAnimation;
+	var Graphics=laya.display.Graphics,Handler=laya.utils.Handler,Input=laya.display.Input,Loader=laya.net.Loader;
+	var Node=laya.display.Node,Point=laya.maths.Point,Rectangle=laya.maths.Rectangle,Render=laya.renders.Render;
+	var Sprite=laya.display.Sprite,Stage=laya.display.Stage,Text=laya.display.Text,Texture=laya.resource.Texture;
+	var Tween=laya.utils.Tween,Utils=laya.utils.Utils;
+	Laya.interface('laya.ui.IRender');
 	Laya.interface('laya.ui.ISelect');
 	Laya.interface('laya.ui.IItem');
-	Laya.interface('laya.ui.IRender');
+	Laya.interface('laya.ui.IComponent');
 	Laya.interface('laya.ui.IBox','IComponent');
 	/**
 	*<code>LayoutStyle</code> 是一个布局样式类。
@@ -470,14 +471,14 @@
 				var layout=this._layout;
 				if (!isNaN(layout.anchorX))this.pivotX=layout.anchorX *this.width;
 				if (!isNaN(layout.centerX)){
-					this.x=(parent.width-this.displayWidth)*0.5+layout.centerX;
+					this.x=(parent.width-this.displayWidth)*0.5+layout.centerX+this.pivotX;
 					}else if (!isNaN(layout.left)){
-					this.x=layout.left;
+					this.x=layout.left+this.pivotX;
 					if (!isNaN(layout.right)){
 						this.width=(parent._width-layout.left-layout.right)/ this.scaleX;
 					}
 					}else if (!isNaN(layout.right)){
-					this.x=parent.width-this.displayWidth-layout.right;
+					this.x=parent.width-this.displayWidth-layout.right+this.pivotX;
 				}
 			}
 		}
@@ -491,14 +492,14 @@
 				var layout=this._layout;
 				if (!isNaN(layout.anchorY))this.pivotY=layout.anchorY *this.height;
 				if (!isNaN(layout.centerY)){
-					this.y=(parent.height-this.displayHeight)*0.5+layout.centerY;
+					this.y=(parent.height-this.displayHeight)*0.5+layout.centerY+this.pivotY;
 					}else if (!isNaN(layout.top)){
-					this.y=layout.top;
+					this.y=layout.top+this.pivotY;
 					if (!isNaN(layout.bottom)){
 						this.height=(parent._height-layout.top-layout.bottom)/ this.scaleY;
 					}
 					}else if (!isNaN(layout.bottom)){
-					this.y=parent.height-this.displayHeight-layout.bottom;
+					this.y=parent.height-this.displayHeight-layout.bottom+this.pivotY;
 				}
 			}
 		}
@@ -2261,8 +2262,7 @@
 			this._itemHeight=this._itemSize+6;
 			this._list.itemRender={type:"Box",child:[{type:"Label",props:{name:"label",x:1,padding:"3,3,3,3",width:labelWidth,height:this._itemHeight,fontSize:this._itemSize,color:labelColor}}]};
 			this._list.repeatY=this._visibleNum;
-			if (this._scrollBar)
-				this._scrollBar.x=this.width-this._scrollBar.width-1;
+			if (this._scrollBar)this._scrollBar.x=this.width-this._scrollBar.width-1;
 			this._list.refresh();
 		}
 
@@ -2310,8 +2310,7 @@
 			this._itemChanged=false;
 			this.runCallLater(this.changeList);
 			this._listHeight=this._labels.length > 0 ? Math.min(this._visibleNum,this._labels.length)*this._itemHeight :this._itemHeight;
-			if (this._scrollBar)
-				this._scrollBar.height=this._listHeight-2;
+			if (this._scrollBar)this._scrollBar.height=this._listHeight-2;
 			var g=this._list.graphics;
 			g.clear();
 			g.drawRect(0,0,this.width-1,this._listHeight,this._itemColors[4],this._itemColors[3]);
@@ -2321,6 +2320,11 @@
 				a.push({label:this._labels[i]});
 			}
 			this._list.array=a;
+			if (this._visibleNum > a.length){
+				this._list.height=this._listHeight;
+				}else {
+				this._list.height=0;
+			}
 		}
 
 		__proto.changeSelected=function(){
@@ -2474,7 +2478,7 @@
 					var py=p.y+this._button.height;
 					py=py+this._listHeight <=Laya.stage.height ? py :p.y-this._listHeight;
 					this._list.pos(p.x,py);
-					Laya.stageBox.addChildAt(this._list,0);
+					Laya.stageBox.addChild(this._list);
 					Laya.stage.once(/*laya.events.Event.MOUSE_DOWN*/"mousedown",this,this.removeList);
 					this._list.selectedIndex=this._selectedIndex;
 					}else {
@@ -4090,8 +4094,8 @@
 		__proto.changeValue=function(){
 			if (this.sizeGrid){
 				var grid=this.sizeGrid.split(",");
-				var left=Number(grid[0]);
-				var right=Number(grid[2]);
+				var left=Number(grid[3]);
+				var right=Number(grid[1]);
 				var max=this.width-left-right;
 				var sw=max *this._value;
 				this._bar.width=left+right+sw;
@@ -4545,6 +4549,9 @@
 						ClassUtils.addGraphicToSprite(node,comp,true);
 						}else{
 						var tChild=View.createComp(node,null,view);
+						if(node.type=="Script"){
+							tChild["owner"]=comp;
+						}else
 						if (node.props.renderType=="mask"||node.props.name=="mask"){
 							comp.mask=tChild;
 							}else{
@@ -4579,7 +4586,8 @@
 
 		View.getCompInstance=function(json){
 			var runtime=json.props ? json.props.runtime :"";
-			var compClass=runtime ? (View.viewClassMap[runtime] || Laya["__classmap"][runtime]):View.uiClassMap[json.type];
+			var compClass;
+			compClass=runtime ? (View.viewClassMap[runtime] || Laya["__classmap"][runtime]):View.uiClassMap[json.type];
 			return compClass ? new compClass():null;
 		}
 
@@ -4595,7 +4603,7 @@
 		View.uiMap={};
 		View.viewClassMap={};
 		__static(View,
-		['uiClassMap',function(){return this.uiClassMap={"ViewStack":ViewStack,"LinkButton":Button,"TextArea":TextArea,"ColorPicker":ColorPicker,"Box":Box,"Button":Button,"CheckBox":CheckBox,"Clip":Clip,"ComboBox":ComboBox,"Component":Component,"HScrollBar":HScrollBar,"HSlider":HSlider,"Image":Image,"Label":Label,"List":List,"Panel":Panel,"ProgressBar":ProgressBar,"Radio":Radio,"RadioGroup":RadioGroup,"ScrollBar":ScrollBar,"Slider":Slider,"Tab":Tab,"TextInput":TextInput,"View":View,"VScrollBar":VScrollBar,"VSlider":VSlider,"Tree":Tree,"HBox":HBox,"VBox":VBox};}
+		['uiClassMap',function(){return this.uiClassMap={"ViewStack":ViewStack,"LinkButton":Button,"TextArea":TextArea,"ColorPicker":ColorPicker,"Box":Box,"Button":Button,"CheckBox":CheckBox,"Clip":Clip,"ComboBox":ComboBox,"Component":Component,"HScrollBar":HScrollBar,"HSlider":HSlider,"Image":Image,"Label":Label,"List":List,"Panel":Panel,"ProgressBar":ProgressBar,"Radio":Radio,"RadioGroup":RadioGroup,"ScrollBar":ScrollBar,"Slider":Slider,"Tab":Tab,"TextInput":TextInput,"View":View,"VScrollBar":VScrollBar,"VSlider":VSlider,"Tree":Tree,"HBox":HBox,"VBox":VBox,"Sprite":Sprite,"Animation":Animation,"Text":Text};}
 		]);
 		View.__init$=function(){
 			View._regs();
@@ -8536,8 +8544,8 @@
 			var showWidth=vShow ? this._width-this._vScrollBar.width :this._width;
 			var showHeight=hShow ? this._height-this._hScrollBar.height :this._height;
 			var padding=this._tf.padding || Styles.labelPadding;
-			this._tf.width=showWidth-padding[0]-padding[2];
-			this._tf.height=showHeight-padding[1]-padding[3];
+			this._tf.width=showWidth;
+			this._tf.height=showHeight;
 			if (this._vScrollBar){
 				this._vScrollBar.x=this._width-this._vScrollBar.width-padding[2];
 				this._vScrollBar.y=padding[1];
