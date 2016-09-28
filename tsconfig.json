@@ -1,6 +1,5 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
         "allowJs": false,
         "target": "es6",
         "outFile": "game.js"

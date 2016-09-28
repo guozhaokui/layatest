@@ -40,4 +40,4 @@ class SkinAnimation_MultiSubMeshSample {
 
     }
 }
-new SkinAnimation_MultiSubMeshSample();
+//new SkinAnimation_MultiSubMeshSample();

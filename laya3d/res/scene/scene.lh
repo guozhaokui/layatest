@@ -1,0 +1,184 @@
+{
+    "type": "Sprite3D",
+    "props":
+    {
+        "name": "RootNode"
+    },
+    "customProps":
+    {
+        "translate":
+        [
+            0,
+            0,
+            0
+        ],
+        "rotation":
+        [
+            0,
+            0,
+            0,
+            1
+        ],
+        "scale":
+        [
+            1,
+            1,
+            1
+        ]
+    },
+    "child":
+    [
+        {
+            "type": "MeshSprite3D",
+            "instanceParams":
+            {
+                "loadPath": "scene-Combined_Mesh__root__scene__2.lm"
+            },
+            "props":
+            {
+                "isStatic": false,
+                "name": "Combined_Mesh__root__scene__2"
+            },
+            "customProps":
+            {
+                "translate":
+                [
+                    5.882472,
+                    -3.404584,
+                    11.48827
+                ],
+                "rotation":
+                [
+                    -0.7071068,
+                    -0,
+                    0,
+                    0.7071068
+                ],
+                "scale":
+                [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "child":
+            [
+                
+            ]
+        },
+        {
+            "type": "MeshSprite3D",
+            "instanceParams":
+            {
+                "loadPath": "scene-Combined_Mesh__root__scene__3.lm"
+            },
+            "props":
+            {
+                "isStatic": false,
+                "name": "Combined_Mesh__root__scene__3"
+            },
+            "customProps":
+            {
+                "translate":
+                [
+                    16.55399,
+                    -24.6303,
+                    2.531157
+                ],
+                "rotation":
+                [
+                    -0.7071068,
+                    -0,
+                    0,
+                    0.7071068
+                ],
+                "scale":
+                [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "child":
+            [
+                
+            ]
+        },
+        {
+            "type": "MeshSprite3D",
+            "instanceParams":
+            {
+                "loadPath": "scene-Combined_Mesh__root__scene_.lm"
+            },
+            "props":
+            {
+                "isStatic": false,
+                "name": "Combined_Mesh__root__scene_"
+            },
+            "customProps":
+            {
+                "translate":
+                [
+                    0.4425392,
+                    -3.121459,
+                    11.86498
+                ],
+                "rotation":
+                [
+                    -0.7071068,
+                    -0,
+                    0,
+                    0.7071068
+                ],
+                "scale":
+                [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "child":
+            [
+                
+            ]
+        },
+        {
+            "type": "MeshSprite3D",
+            "instanceParams":
+            {
+                "loadPath": "scene-Object01.lm"
+            },
+            "props":
+            {
+                "isStatic": false,
+                "name": "Object01"
+            },
+            "customProps":
+            {
+                "translate":
+                [
+                    5.882472,
+                    -3.404584,
+                    11.48827
+                ],
+                "rotation":
+                [
+                    -0.7071068,
+                    -0,
+                    0,
+                    0.7071068
+                ],
+                "scale":
+                [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "child":
+            [
+                
+            ]
+        }
+    ]
+}
