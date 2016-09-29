@@ -40,7 +40,12 @@ declare class VRDisplay extends EventTarget {
    * The VRPose will contain the position, orientation, velocity,
    * and acceleration of each of these properties.
    */
-  getPose() : VRPose;
+  //getPose() : VRPose; 要抛弃的了
+  /**
+   * Populates the passed VRFrameData with the information required to render
+   * the current frame.
+   */  
+    getFrameData(vrframedata:VRFrameData):boolean;
 
   /**
    * Return the current instantaneous pose of the VRDisplay, with no
@@ -185,3 +190,13 @@ interface Window {
 interface Gamepad {
   displayId: number;
 }
+
+//增加的
+interface VRFrameData {
+  timestamp:number;
+  leftProjectionMatrix:Float32Array;
+  leftViewMatrix:Float32Array;
+  rightProjectionMatrix:Float32Array;
+  rightViewMatrix:Float32Array;
+  pose:VRPose;
+} 
