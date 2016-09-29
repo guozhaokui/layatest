@@ -179,6 +179,44 @@
             [
                 
             ]
+        },
+        {
+            "type": "MeshSprite3D",
+            "instanceParams":
+            {
+                "loadPath": "scene-Box001.lm"
+            },
+            "props":
+            {
+                "isStatic": false,
+                "name": "Box001"
+            },
+            "customProps":
+            {
+                "translate":
+                [
+                    -4.050598,
+                    0,
+                    -16.93884
+                ],
+                "rotation":
+                [
+                    -0.7071068,
+                    -0,
+                    0,
+                    0.7071068
+                ],
+                "scale":
+                [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "child":
+            [
+                
+            ]
         }
     ]
 }
