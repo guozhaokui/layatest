@@ -16,7 +16,7 @@ class WebVRRender extends Laya.BaseScene {
         if(canvas)
             this.canvas = canvas;
         else 
-            this.canvas = (<any>Laya.render).canvas;// Laya.WebGL.mainContext.;// TODO
+            this.canvas = laya.renders.Render.canvas;
         this.init();
     }
 
@@ -97,6 +97,9 @@ class WebVRRender extends Laya.BaseScene {
      * 把view矩阵转换一下，从坐姿空间转换成站立空间
      */
     getStandingViewMatrix(out, view) {
+        //temp
+        out=view;
+        
         if (this.vrDisplay.stageParameters) {
             this.vrDisplay.stageParameters.sittingToStandingTransform;
             //mat4.invert(out, vrDisplay.stageParameters.sittingToStandingTransform);
