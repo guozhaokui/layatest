@@ -40,10 +40,6 @@ class GameTest{
         s1sp.transform.translate(new Vec3(-2,-0.0,-16.9));
     }
 
-    addNPC(x:number,y:number,z:number, dir:number){
-
-    }
-
     addPlayer(x:number,y:number,z:number, dir:number):GameTest{
         var npc = new game_character(this.sceRoot);
         this.sceRoot.addChild(npc);
@@ -76,6 +72,8 @@ class GameTest{
         //if(e.keyCode)
         //this.currCam.rotl();
     }
+
+    
 }
 
 var game = new GameTest();
