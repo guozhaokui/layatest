@@ -37,6 +37,9 @@ class WebVRRender extends Laya.BaseScene {
                     } else {
                         console.log('no stage size info!')
                     }
+                    if(this.vrDisplay.capabilities.hasPosition){
+                        console.log('support position');
+                    }
                     //vrDisplay.resetPose(); 设置当前位置为原点
                     if (this.vrDisplay.capabilities.canPresent) {
                         console.log('vrDisplay.capabilities.canPresent=true');//这个什么意思呢
@@ -48,12 +51,22 @@ class WebVRRender extends Laya.BaseScene {
                 }
             });
         } else {
-            alert('not support webvr!');
+            console.log('not support webvr!');
         }
 
         //test
         this.onResize();
-        this.startRender();
+        if(!this.vrDisplay)
+            this.startRender();
+    }
+
+    //请求提交到头显，而不是屏幕
+    enterVRMode(){
+        this.vrDisplay.requestPresent([{source:this.canvas}]).then(function(){
+            this.start
+        },function(err){
+            console.log('cant present :'+err);
+        });
     }
 
     startRender() {

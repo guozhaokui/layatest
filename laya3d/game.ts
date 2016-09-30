@@ -11,6 +11,7 @@ class GameTest{
     currCam:FreeCamera=null;
     player1:Laya.Sprite3D=null;
     npcs:Laya.Sprite3D[]=[];
+    dirLight:Laya.DirectionLight=null;
     constructor(){
         this.initEngine();
         this.sceRoot = Laya.stage.addChild(new WebVRRender(null)) as Laya.Scene;
@@ -39,6 +40,20 @@ class GameTest{
         var s1 = new Laya.Sphere(1,10,10);
         var s1sp = this.sceRoot.addChild(new Laya.MeshSprite3D(s1)) as Laya.Sprite3D;
         s1sp.transform.translate(new Vec3(-2,-0.0,-16.9));
+
+        this.dirLight = new Laya.DirectionLight();
+        this.dirLight.direction = new Laya.Vector3(0, -1.0, -1.0);   
+	    this.dirLight.ambientColor = new Laya.Vector3(0.7, 0.6, 0.6);
+		this.dirLight.specularColor = new Laya.Vector3(1.0, 1.0, 0.9);
+		this.dirLight.diffuseColor = new Laya.Vector3(1, 1, 1);
+        this.sceRoot.addChild(this.dirLight);
+
+        var dirLight1 = new Laya.DirectionLight();
+        dirLight1.direction = new Laya.Vector3(0, -1.0, 1.0);   
+	    dirLight1.ambientColor = new Laya.Vector3(0.7, 0.6, 0.6);
+		dirLight1.specularColor = new Laya.Vector3(1.0, 1.0, 0.9);
+		dirLight1.diffuseColor = new Laya.Vector3(1, 1, 1);
+        this.sceRoot.addChild(dirLight1);
     }
 
     addPlayer(x:number,y:number,z:number, dir:number):GameTest{

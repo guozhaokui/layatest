@@ -9,6 +9,8 @@ class FreeCamera extends Laya.Camera{
     _update(rs:Laya.RenderState){
         super._update(rs);
         //this.vTrans.z=0.1;
+        this.transform.localPosition=new Laya.Vector3(0,2.5,5);
+        //this.transform.localRotationEuler = new Laya.Vector3(-30,0,0);
         this.transform.translate(this.vTrans);
     }
     rotl(){
