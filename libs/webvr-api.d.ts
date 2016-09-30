@@ -192,11 +192,13 @@ interface Gamepad {
 }
 
 //增加的
-interface VRFrameData {
+declare class VRFrameData {
   timestamp:number;
   leftProjectionMatrix:Float32Array;
   leftViewMatrix:Float32Array;
   rightProjectionMatrix:Float32Array;
   rightViewMatrix:Float32Array;
   pose:VRPose;
+  constructor();
 } 
+

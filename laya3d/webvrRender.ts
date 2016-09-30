@@ -22,12 +22,14 @@ class WebVRRender extends Laya.BaseScene {
 
     init() {
         if (navigator.getVRDisplays) {
-            navigator.getVRDisplays().then(function (displays: VRDisplay[]) {
+            var me = this;
+            navigator.getVRDisplays().then( (displays: VRDisplay[])=>{
                 console.log('support webvr!!');
                 if (displays.length > 0) {
                     this.vrDisplay = displays[0];
                     this.vrDisplay.depthNear = 0.1;
                     this.vrDisplay.depthFar = 1024.0;
+                    this.frameData = new VRFrameData();
                     //init WebGL
                     var stageInfo = this.vrDisplay.stageParameters;
                     if (stageInfo && stageInfo.sizeX > 0 && stageInfo.sizeZ > 0) {
@@ -47,23 +49,38 @@ class WebVRRender extends Laya.BaseScene {
 
                     window.addEventListener('vrdisplaypresentchange', this.onVRPresentChange, false);
                     window.addEventListener('vrdisplayactivate', this.onVRRequestPresent, false);
-                    window.addEventListener('vrdisplaydeactivate', this.onVRExitPresent, false);                    
+                    window.addEventListener('vrdisplaydeactivate', this.onVRExitPresent, false);
+
+                    this.onResize();
+                    window.addEventListener('keydown',(ev)=>{
+                        if(ev.keyCode==32){
+                            this.enterVRMode();
+                        }
+                    });
                 }
             });
         } else {
             console.log('not support webvr!');
+            this.onResize();
+            this.startRender();                                        
         }
 
         //test
-        this.onResize();
-        if(!this.vrDisplay)
-            this.startRender();
+        //this.onResize();
+        //if(!this.vrDisplay)
+        //    this.startRender();
     }
 
     //请求提交到头显，而不是屏幕
+    //这个函数必须在事件回调中处理，不能直接调用（Must be called in response to a user gesture）
     enterVRMode(){
-        this.vrDisplay.requestPresent([{source:this.canvas}]).then(function(){
-            this.start
+        this.vrDisplay.requestPresent([{source:this.canvas}]).then(()=>{
+            console.log('VRMode ');
+            this.onResize();
+            //Laya.stage.width=3024;
+            //Laya.stage.height=1680;
+            //Laya.stage.setScreenSize(3024,1680);
+            this.startRender();       
         },function(err){
             console.log('cant present :'+err);
         });
@@ -71,15 +88,17 @@ class WebVRRender extends Laya.BaseScene {
 
     startRender() {
         var reqLoop = window.requestAnimationFrame;
+        var obj:any=window;
         if (this.vrDisplay) {
             //替换laya的循环
             reqLoop = this.vrDisplay.requestAnimationFrame;
+            obj = this.vrDisplay;
         }
         function loop() {
             Laya.stage._loop();
-            reqLoop(loop);
+            reqLoop.call(obj,loop);
         }
-        reqLoop(loop);
+        reqLoop.call(obj,loop);
     }
 
     onVRPresentChange(){
@@ -111,7 +130,7 @@ class WebVRRender extends Laya.BaseScene {
      */
     getStandingViewMatrix(out, view) {
         //temp
-        out=view;
+        for(var i=0; i<16;i++)out[i]=view[i];
         
         if (this.vrDisplay.stageParameters) {
             this.vrDisplay.stageParameters.sittingToStandingTransform;
@@ -151,7 +170,7 @@ class WebVRRender extends Laya.BaseScene {
             var matp = new Laya.Matrix4x4(m[0],m[1],m[2],m[3],m[4],m[5],m[6],m[7],m[8],m[9],m[10],m[11],m[12],m[13],m[14],m[15]);
             rs.projectionMatrix = matp;
             var matvp = new Laya.Matrix4x4();
-            Laya.Matrix4x4.multiply(mat,matp,matvp);
+            Laya.Matrix4x4.multiply(matp,mat,matvp);
             rs.projectionViewMatrix = matvp;
         }else{
             var m = this.viewMat;
@@ -163,7 +182,7 @@ class WebVRRender extends Laya.BaseScene {
             var matp = new Laya.Matrix4x4(m[0],m[1],m[2],m[3],m[4],m[5],m[6],m[7],m[8],m[9],m[10],m[11],m[12],m[13],m[14],m[15]);
             rs.projectionMatrix = matp;
             var matvp = new Laya.Matrix4x4();
-            Laya.Matrix4x4.multiply(mat,matp,matvp);
+            Laya.Matrix4x4.multiply(matp,mat,matvp);
             rs.projectionViewMatrix = matvp;
         }
     }
@@ -187,7 +206,8 @@ class WebVRRender extends Laya.BaseScene {
         if (vrDisplay) {
             vrDisplay.getFrameData(frameData);
             if (vrDisplay.isPresenting) {
-                //左半屏
+               //console.log('['+frameData.pose.position[0]+','+frameData.pose.position[1]+','+frameData.pose.position[2]);
+               //左半屏
                 state.viewport = this.viewPortL;
                 this.setRSCamMatrix(state,frameData,true);
                 this._preRenderScene(gl, state);
