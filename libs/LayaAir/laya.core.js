@@ -4303,11 +4303,13 @@ window.Laya=(function(window,document){
 			}
 			Render._context=new RenderContext(width,height,isWebGl ? null :Render._mainCanvas);
 			Render._context.ctx.setIsMainContext();
+			/*
 			Browser.window.requestAnimationFrame(loop);
 			function loop (){
 				Laya.stage._loop();
 				Browser.window.requestAnimationFrame(loop);
 			}
+			*/
 		}
 
 		__class(Render,'laya.renders.Render');

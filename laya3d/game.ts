@@ -1,6 +1,7 @@
 ///<reference path="gamesce.ts" />
 /// <reference path="shape/cylinder.ts" />
 /// <reference path="character.ts" />
+/// <reference path="webvrRender.ts" />
 
 
 var Vec3 = Laya.Vector3;
@@ -12,7 +13,7 @@ class GameTest{
     npcs:Laya.Sprite3D[]=[];
     constructor(){
         this.initEngine();
-        this.sceRoot = Laya.stage.addChild(new Laya.Scene()) as Laya.Scene;
+        this.sceRoot = Laya.stage.addChild(new WebVRRender(null)) as Laya.Scene;
     }
 
     initEngine(){
