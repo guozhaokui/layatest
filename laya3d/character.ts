@@ -33,7 +33,7 @@ class game_character extends Laya.MeshSprite3D{
         var len = 0;
         var st = Date.now();
         while(true){
-            if(len<0.1 || Date.now()-st>5000){
+            if( Date.now()-st>5000){
                 st=Date.now();
                 this.vTarget.x=Math.random()*1-0.5;
                 this.vTarget.z=Math.random()*1-0.5;
@@ -41,8 +41,10 @@ class game_character extends Laya.MeshSprite3D{
                 dz = this.vTarget.z - this.transform.position.z;
                 len = Math.sqrt(dx*dx+dz*dz); 
                 if(len<=0)len=1;
-                this.vVel.x = vel*dx/len;
-                this.vVel.z = vel*dz/len;
+                //this.vVel.x = vel*dx/len;
+                //this.vVel.z = vel*dz/len;
+                this.vVel.x=0;
+                this.vVel.z=-0.03;
                 var ang = Math.atan2(dz,dx);
                 this.transform.localRotationEuler=new Laya.Vector3(0,-ang-3.14/2,0);
             }

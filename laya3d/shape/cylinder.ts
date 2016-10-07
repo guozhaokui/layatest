@@ -62,12 +62,12 @@ class _Cylinder extends Laya.PrimitiveMesh{
      * @param stacks 水平层数
      * @param slices 垂直层数
      */
-    constructor(radius:number = 10, height:number=10, stacks:number = 8, slices:number = 8) {
+    constructor(radius:number , height:number, stacks:number , slices:number ) {
         super();
-        this._radius = radius;
-        this._height = height;
-        this._stacks = stacks;
-        this._slices = slices;
+        this._radius = radius||10;
+        this._height = height||10;
+        this._stacks = stacks||8;
+        this._slices = slices||8;
         this.recreateResource();
         this._loaded = true;
         

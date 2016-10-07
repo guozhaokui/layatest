@@ -41,6 +41,7 @@ class GameTest{
         var s1sp = this.sceRoot.addChild(new Laya.MeshSprite3D(s1)) as Laya.Sprite3D;
         s1sp.transform.translate(new Vec3(-2,-0.0,-16.9));
 
+        /*
         this.dirLight = new Laya.DirectionLight();
         this.dirLight.direction = new Laya.Vector3(0, -1.0, -1.0);   
 	    this.dirLight.ambientColor = new Laya.Vector3(0.7, 0.6, 0.6);
@@ -54,6 +55,7 @@ class GameTest{
 		dirLight1.specularColor = new Laya.Vector3(1.0, 1.0, 0.9);
 		dirLight1.diffuseColor = new Laya.Vector3(1, 1, 1);
         this.sceRoot.addChild(dirLight1);
+        */
     }
 
     addPlayer(x:number,y:number,z:number, dir:number):GameTest{
