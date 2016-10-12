@@ -18,8 +18,8 @@ class GameTest{
     }
 
     initEngine(){
-        Laya3D.init(0, 0,true);
-        Laya.stage.scaleMode = Laya.Stage.SCALE_FULL;
+        Laya3D.init(3024, 1680,true);
+        Laya.stage.scaleMode = Laya.Stage.SCALE_NOSCALE;
         Laya.stage.screenMode = Laya.Stage.SCREEN_NONE;
         Laya.Stat.show();
         Laya.stage.on(Laya.Event.KEY_DOWN,this,this.handlKeyEvent);
