@@ -196,7 +196,7 @@ class WebVRRender extends Laya.BaseScene {
         (this.currentCamera.clearColor) && (this._clearColor(gl));//清空场景
         this._prepareScene(gl, state);
         if(this.vrDisplay){
-            state.shaderDefs.add(Laya.ShaderDefines3D.VR);            
+            //state.shaderDefs.add(Laya.ShaderDefines3D.VR);            
         }
         this.beforeUpate(state);//更新之前
         this._updateScene(state);
